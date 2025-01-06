@@ -20,7 +20,7 @@ jobs:
 
       - name: Set up Git credentials
         run: |
-          git remote set-url origin https://github-actions:$(echo ${{ secrets.GH_TOKEN }})@github.com/Dawnzac/patch-node.git
+          git remote set-url origin https://github-actions:$(echo ${{ secrets.GH_TOKEN }})@github.com/Dawnzac/manifest-update.git
 
       - name: Set up Python
         uses: actions/setup-python@v4
