@@ -1,5 +1,5 @@
 import requests
-import yaml
+#import yaml
 from pathlib import Path
 
 WINGET_REPO = "https://api.github.com/repos/microsoft/winget-pkgs/contents/manifests"
@@ -34,7 +34,8 @@ def download_manifest(manifest_url, app_id):
     """
     Download the manifest file for the latest version of the app.
     """
-    app_download_folder = Path(DOWNLOAD_FOLDER) / app_id
+    app_path = f"{app_id[0].lower()}/{app_id.replace('.', '/')}"
+    app_download_folder = Path(DOWNLOAD_FOLDER) / app_path
     app_download_folder.mkdir(parents=True, exist_ok=True)
     
     file_name = manifest_url.split('/')[-1]

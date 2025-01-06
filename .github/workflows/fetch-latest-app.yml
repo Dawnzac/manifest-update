@@ -30,7 +30,7 @@ jobs:
           python-version: "3.10"
 
       - name: Install Dependencies
-        run: pip install requests pyyaml beautifulsoup4
+        run: pip install requests beautifulsoup4
 
       - name: Run Script to Fetch Winget Manifests
         run: python download_manifest7.py
