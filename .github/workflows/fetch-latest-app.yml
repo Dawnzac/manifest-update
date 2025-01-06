@@ -61,17 +61,22 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Upload Updated Files to Azure Storage
+      - name: Upload Updated Files to Azure Blob Storage
         env:
           AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
         run: |
-          if [ -n "${{ env.updated_files }}" ]; then
-            for FILE in ${{ env.updated_files }}; do
-              az storage blob upload \
-                --container-name manifests \
-                --file $FILE \
-                --name $(basename $FILE)
-            done
-          else
-            echo "No updated files to upload."
+          # Get the list of updated files in the manifests folder
+          UPDATED_FILES=$(git diff --name-only HEAD~1 | grep "^manifests/")
+            
+          if [ -z "$UPDATED_FILES" ]; then
+            echo "No updated files in manifests folder."
+            exit 0
           fi
+
+          echo "Files to upload:"
+          echo "$UPDATED_FILES"
+
+          for FILE in $UPDATED_FILES; do
+            echo "Uploading $FILE to Azure Storage..."
+            az storage blob upload --file "$FILE" --container-name "manifests" --name "$FILE" --overwrite
+          done
