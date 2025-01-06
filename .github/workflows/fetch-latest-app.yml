@@ -54,11 +54,8 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Determine Updated Files
-        id: determine-updated-files
-        run: |
-          UPDATED_FILES=$(git diff --name-only HEAD~1)
-          echo "updated_files=$UPDATED_FILES" >> $GITHUB_ENV
+      - name: Check Git Log
+        run: git log --oneline || echo "No commits yet"
 
       - name: Set Up Azure CLI
         uses: azure/login@v1
