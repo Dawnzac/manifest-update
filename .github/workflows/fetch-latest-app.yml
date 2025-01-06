@@ -39,7 +39,11 @@ jobs:
         if: success()
         run: |
           git add manifests
-          git commit -m "Update latest manifests"
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git commit -m "Update manifests"
           git push origin main
 
   update-azure-storage:
