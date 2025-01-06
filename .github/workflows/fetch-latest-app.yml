@@ -57,10 +57,5 @@ jobs:
       - name: Check Git Log
         run: git log --oneline || echo "No commits yet"
 
-      - name: Set Up Azure CLI
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
       - name: Upload files to Azure Blob Storage
         run: az storage blob upload-batch --account-name defatompatchrepo --destination manifests --source ./manifests --connection-string ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
