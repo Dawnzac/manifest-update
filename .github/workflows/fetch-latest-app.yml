@@ -42,12 +42,6 @@ jobs:
           git commit -m "Update latest manifests"
           git push origin main
 
-      - name: Determine Updated Files
-        id: determine-updated-files
-        run: |
-          UPDATED_FILES=$(git diff --name-only HEAD~1)
-          echo "updated_files=$UPDATED_FILES" >> $GITHUB_ENV
-
   update-azure-storage:
     name: Update Azure Storage
     needs: fetch-manifests
@@ -55,6 +49,12 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
+
+      - name: Determine Updated Files
+        id: determine-updated-files
+        run: |
+          UPDATED_FILES=$(git diff --name-only HEAD~1)
+          echo "updated_files=$UPDATED_FILES" >> $GITHUB_ENV
 
       - name: Set Up Azure CLI
         uses: azure/login@v1
