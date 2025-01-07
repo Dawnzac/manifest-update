@@ -162,6 +162,7 @@ def main():
                 blob_name = "/".join(updated_downloaded_file.split("/", 1)[1:])
                 #print(f"Blob_name : {blob_name}")
                 upload_to_azure(downloaded_file, blob_name, latest_verion, app_id)
+                print(QUEUE_NAME)
 
                 # Verify and read the downloaded YAML file
                 #read_yaml_file(downloaded_file)
