@@ -49,12 +49,7 @@ def download_manifest(manifest_url, app_id):
     app_download_folder.mkdir(parents=True, exist_ok=True)
     
     file_name = manifest_url.split('/')[-1]
-    #print(f'File name : {file_name}')
-
     file_path = app_download_folder / file_name
-    #print(f'File path : {file_path}')
-
-    #print(f'App Download folder : {app_download_folder}')
 
     print(f"Downloading {manifest_url} to {file_path}...")
     response = requests.get(manifest_url)
