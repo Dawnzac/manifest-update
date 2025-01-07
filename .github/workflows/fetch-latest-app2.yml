@@ -37,6 +37,5 @@ jobs:
         env:
           AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
           SERVICE_BUS_CONNECTION_STRING: ${{ secrets.SERVICE_BUS_CONNECTION_STRING }}
-          QUEUE_NAME: winget-update
           AZURE_CONTAINER_NAME: test-manifest
         run: python download_manifest11.py
