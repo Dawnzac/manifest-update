@@ -1,1 +1,15 @@
 Google.Chrome
+Adobe.Acrobat.Reader.32-bit
+Adobe.Acrobat.Reader.64-bit
+Adobe.Acrobat.Pro
+Corel.WinZip
+VideoLAN.VLC
+RealVNC.VNCServer
+RealVNC.VNCViewer
+Oracle.JavaRuntimeEnvironment
+Mozilla.Firefox
+Zoom.Zoom
+TeamViewer.TeamViewer
+TeamViewer.TeamViewer.Host
+RARLab.WinRAR
+Microsoft.DotNet.AspNetCore.9
