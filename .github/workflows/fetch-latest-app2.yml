@@ -1,0 +1,42 @@
+name: Download Winget Manifests and Upload to Azure
+
+on:
+  workflow_dispatch: # Allows manual trigger
+  schedule:
+    - cron: "0 0 * * *" # Runs daily at midnight UTC
+
+jobs:
+  fetch-manifests:
+    name: Fetch Latest Manifests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Git identity
+        run: |
+          git config --global user.email "Kumar@defatom.com"
+          git config --global user.name "Kumar K"
+
+      - name: Set up Git credentials
+        run: |
+          git remote set-url origin https://github-actions:$(echo ${{ secrets.PERSONAL_ACCESS_TOKEN }})@github.com/Defatom-Secure/Defatom.Winget-pkgs.git
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install Dependencies
+        run: pip install requests beautifulsoup4
+
+      - name: Install Azure Storage SDK
+        run: pip install azure-storage-blob azure-servicebus
+
+      - name: Run Script to Fetch Winget Manifests
+        env:
+          AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
+          SERVICE_BUS_CONNECTION_STRING: ${{ secrets.SERVICE_BUS_CONNECTION_STRING }}
+          QUEUE_NAME: ${{ secrets.AZURE_QUEUE_NAME }}
+          AZURE_CONTAINER_NAME: test-manifest
+        run: python download_manifest11.py
