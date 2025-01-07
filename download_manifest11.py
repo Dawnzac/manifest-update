@@ -10,7 +10,7 @@ from azure.servicebus import ServiceBusClient, ServiceBusMessage
 
 WINGET_REPO = "https://api.github.com/repos/microsoft/winget-pkgs/contents/manifests"
 WINGET_REPO_RAW_URL = "https://raw.githubusercontent.com/microsoft/winget-pkgs/master/manifests"
-DOWNLOAD_FOLDER = "test-manifest"
+DOWNLOAD_FOLDER = "manifests"
 APPS_FILE = "apps.txt"
 
 STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
