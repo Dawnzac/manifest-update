@@ -15,12 +15,12 @@ jobs:
 
       - name: Set up Git identity
         run: |
-          git config --global user.email "Kumar@defatom.com"
-          git config --global user.name "Kumar K"
+          git config --global user.email "dawnzac88@gmail.com"
+          git config --global user.name "Dawn Zac"
 
       - name: Set up Git credentials
         run: |
-          git remote set-url origin https://github-actions:$(echo ${{ secrets.PERSONAL_ACCESS_TOKEN }})@github.com/Defatom-Secure/Defatom.Winget-pkgs.git
+          git remote set-url origin https://github-actions:$(echo ${{ secrets.GH_TOKEN }})@github.com/Dawnzac/manifest-update.git
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -37,6 +37,6 @@ jobs:
         env:
           AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
           SERVICE_BUS_CONNECTION_STRING: ${{ secrets.SERVICE_BUS_CONNECTION_STRING }}
-          QUEUE_NAME: ${{ secrets.AZURE_QUEUE_NAME }}
+          QUEUE_NAME: winget-update
           AZURE_CONTAINER_NAME: test-manifest
         run: python download_manifest11.py
