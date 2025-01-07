@@ -9,8 +9,6 @@ jobs:
   fetch-manifests:
     name: Fetch Latest Manifests
     runs-on: ubuntu-latest
-    outputs:
-      updated-files: ${{ steps.determine-updated-files.outputs.updated_files }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -57,13 +55,11 @@ jobs:
       - name: Check Git Log
         run: git log --oneline || echo "No commits yet"
 
-      - name: Set Up Azure CLI
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: List Manifest Directory
-        run: ls -la ./manifests
+      - name: Install Azure Storage SDK
+        run: pip install azure-storage-blob
 
       - name: Upload files to Azure Blob Storage
-        run: az storage blob upload-batch --account-name defatompatchrepo --destination manifests --source ./manifests --connection-string ${{ secrets.STORAGE_CONNECTION_STRING }}
+        env:
+          AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
+          AZURE_CONTAINER_NAME: manifests
+        run: python azure_export.py
