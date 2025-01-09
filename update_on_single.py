@@ -1,6 +1,5 @@
 import requests
 from datetime import datetime
-import requests
 #import yaml
 import json
 from pathlib import Path
@@ -151,7 +150,7 @@ def fetch_merged_pull_requests():
             title = pr.get("title")
             if title.startswith("Automatic deletion of ") or title.startswith("Automatic update of "):
                 continue
-            if title.startswith("New version"):
+            if title.startswith("New version") or title.startswith("Update"):
                 app_id = title[len("New version "):].split()[0]
                 if app_id in apps:
                     print(f"PR Title: {title}")
