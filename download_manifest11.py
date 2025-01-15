@@ -81,12 +81,13 @@ def get_blob_hash(blob_client):
     
 #Azure service Bus
 
-def send_service_bus_message(app_name, app_version, blob_url):
+def send_service_bus_message(app_name, app_version, blob_url, manifest_url):
     service_bus_client = ServiceBusClient.from_connection_string(SERVICE_BUS_CONNECTION_STRING)
     message_content = {
         "ApplicationName": app_name,
         "ApplicationVersion": app_version,
         "BlobUrl": blob_url,
+        "Githubpath": manifest_url,
     }
     message = ServiceBusMessage(json.dumps(message_content))
     
@@ -98,7 +99,7 @@ def send_service_bus_message(app_name, app_version, blob_url):
         print(f"Error sending message to Service Bus: {e}")
 
 
-def upload_to_azure(file_path, blob_name, latest_verion, app_id):
+def upload_to_azure(file_path, blob_name, latest_verion, app_id ,manifest_url):
     blob_service_client = BlobServiceClient.from_connection_string(STORAGE_CONNECTION_STRING)
     blob_client = blob_service_client.get_blob_client(container=CONTAINER_NAME, blob=blob_name)
 
@@ -117,7 +118,7 @@ def upload_to_azure(file_path, blob_name, latest_verion, app_id):
         with open(file_path, "rb") as data:
             blob_client.upload_blob(data, overwrite=True)
         print(f"Uploaded {file_path} to Azure Blob Storage as {blob_name}")
-        send_service_bus_message(app_id, latest_verion, blob_name)
+        send_service_bus_message(app_id, latest_verion, blob_name, manifest_url)
     except Exception as e:
         print(f"Error uploading {file_path}: {e}")
 
@@ -156,7 +157,7 @@ def main():
                 updated_downloaded_file = str(downloaded_file).replace("\\", "/")
                 blob_name = "/".join(updated_downloaded_file.split("/", 1)[1:])
                 #print(f"Blob_name : {blob_name}")
-                upload_to_azure(downloaded_file, blob_name, latest_verion, app_id)
+                upload_to_azure(downloaded_file, blob_name, latest_verion, app_id, manifest_url)
 
                 # Verify and read the downloaded YAML file
                 #read_yaml_file(downloaded_file)
