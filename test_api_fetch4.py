@@ -1,6 +1,7 @@
 import requests
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
+import time
 
 GITHUB_PULL_API_URL = "https://api.github.com/repos/microsoft/winget-pkgs/pulls"
 HEADERS = {"Accept": "application/vnd.github+json"}
@@ -14,21 +15,15 @@ def load_apps_from_file(file_path):
 def fetch_merged_pull_requests():
     last_24_hours = datetime.now(tz=timezone.utc) - timedelta(hours=24)
     print(f"last 24 Hours: {last_24_hours}")
-    dt = datetime.fromisoformat(last_24_hours)
-    since_time = dt.strftime("%Y-%m-%dT%H:%M:%SZ")
-    print(f"Formatted PRs merged since: {since_time}")
 
     apps = load_apps_from_file(APPS_FILE)
     recent_merged_prs = []
     params = {
-        "state": "closed",  # Only closed pull requests
+        "state": "closed",
         "per_page": 100,
-        #"sort": "updated",
-        #"direction": "desc",
-        #"since": since_time ,
         "page": 1
     }
-    
+    start_time = time.time()
     while True:
         response = requests.get(GITHUB_PULL_API_URL, headers=HEADERS, params=params)
         
@@ -37,19 +32,30 @@ def fetch_merged_pull_requests():
             break
 
         prs = response.json()
+        all_prs_outdated = True
 
         # Filter PRs merged within the last 24 hours
         for pr in prs:
             merged_at = pr.get("merged_at")
             print(merged_at)
-            recent_merged_prs.append(pr)
+            if merged_at:
+                merged_at_dt = datetime.fromisoformat(merged_at.replace("Z", "+00:00"))
+                if merged_at_dt > last_24_hours and merged_at is not None:
+                    recent_merged_prs.append(pr)
+                    all_prs_outdated = False
+                else:
+                    continue
+        if all_prs_outdated:
+            print("All remaining PRs are older than 24 hours. Stopping pagination.")
+            break
 
         # Check if there are more pages
-        if 'next' in response.links:
-            params['page'] += 1  # Move to the next page
+        if "next" in response.links:
+            params["page"] += 1
         else:
             break
-            
+
+    end_time = time.time()
     print(f"Latest Merged Pull Requests (winget-pkgs):\n")
     i = 1
     print(f"Found {len(recent_merged_prs)} merged PRs in the last 24 hours:")
@@ -70,6 +76,9 @@ def fetch_merged_pull_requests():
                 print(f"Merged At: {pr.get('merged_at')}")
         print( f"{i} -\n")
         i = i +1
+
+    execution_time = end_time - start_time
+    print(f"Time taken for Fetch: {execution_time:.4f} seconds")
 
 
 def main():

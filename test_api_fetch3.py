@@ -34,6 +34,7 @@ def fetch_merged_pull_requests():
         # Filter PRs merged within the last 24 hours
         for pr in prs:
             merged_at = pr.get("merged_at")
+            print(merged_at)
             if merged_at:
                 merged_at_dt = datetime.fromisoformat(merged_at.replace("Z", "+00:00"))
                 if merged_at_dt > since_time:
