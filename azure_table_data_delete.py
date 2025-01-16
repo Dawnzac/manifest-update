@@ -9,7 +9,7 @@ load_dotenv()
 # Retrieve variables from environment
 STORAGE_ACCOUNT_NAME = os.getenv("STORAGE_ACCOUNT_NAME")
 STORAGE_ACCOUNT_KEY = os.getenv("STORAGE_ACCOUNT_KEY")
-TABLE_NAME = os.getenv("TABLE_NAME")
+TABLE_NAME = os.getenv("AZURE_TABLE_NAME")
 
 # Validate that variables are loaded
 if not STORAGE_ACCOUNT_NAME or not STORAGE_ACCOUNT_KEY or not TABLE_NAME:
