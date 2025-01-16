@@ -1,23 +1,23 @@
 import requests
-#import yaml
 import json
 from pathlib import Path
 import os
 import hashlib
 from azure.storage.blob import BlobServiceClient
 from azure.servicebus import ServiceBusClient, ServiceBusMessage
-
+from dotenv import load_dotenv
+load_dotenv()
 
 WINGET_REPO = "https://api.github.com/repos/microsoft/winget-pkgs/contents/manifests"
 WINGET_REPO_RAW_URL = "https://raw.githubusercontent.com/microsoft/winget-pkgs/master/manifests"
-DOWNLOAD_FOLDER = "manifests"
+DOWNLOAD_FOLDER = "test-manifest"
 APPS_FILE = "apps.txt"
 
 STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 CONTAINER_NAME = os.getenv("AZURE_CONTAINER_NAME")
 SERVICE_BUS_CONNECTION_STRING = os.getenv("SERVICE_BUS_CONNECTION_STRING")
-QUEUE_NAME = "winget-update"
-
+#QUEUE_NAME = "winget-update"
+QUEUE_NAME = "patchjob"
 
 
 def get_latest_version_url(app_id):
@@ -123,16 +123,6 @@ def upload_to_azure(file_path, blob_name, latest_verion, app_id ,manifest_url):
         print(f"Error uploading {file_path}: {e}")
 
 
-def read_yaml_file(file_path):
-    try:
-        with open(file_path, 'r', encoding='utf-8') as file:
-            data = yaml.safe_load(file)
-            print(f"YAML file content for {file_path}:\n{data}")
-            return data
-    except Exception as e:
-        print(f"Error reading YAML file {file_path}: {e}")
-        return None
-
 def main():
 
     # List of apps to fetch
@@ -158,9 +148,6 @@ def main():
                 blob_name = "/".join(updated_downloaded_file.split("/", 1)[1:])
                 #print(f"Blob_name : {blob_name}")
                 upload_to_azure(downloaded_file, blob_name, latest_verion, app_id, manifest_url)
-
-                # Verify and read the downloaded YAML file
-                #read_yaml_file(downloaded_file)
 
 if __name__ == "__main__":
 
