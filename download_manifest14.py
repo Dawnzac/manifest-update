@@ -30,22 +30,61 @@ TABLE_NAME = os.getenv("AZURE_TABLE_NAME")
 PARTITION_KEY = "Apps"
 
 def load_apps_from_table():
+    """Load app entities from Azure Table Storage and ensure completeness."""
     try:
         table_service_client = TableServiceClient.from_connection_string(STORAGE_CONNECTION_STRING)
         table_client = table_service_client.get_table_client(TABLE_NAME)
 
         apps = set()
-        entities = table_client.list_entities()
-        for entity in entities:
+        for entity in table_client.list_entities():
             app_id = entity.get("AppID")
             if app_id:
+                # Ensure all required fields exist
+                updated = False
+                if not entity.get("version"):
+                    entity["version"] = ""
+                    updated = True
+                if not entity.get("Blobpath"):
+                    entity["Blobpath"] = ""
+                    updated = True
+                if not entity.get("githubpath"):
+                    entity["githubpath"] = ""
+                    updated = True
+                if not entity.get("hash"):
+                    entity["hash"] = ""
+                    updated = True
+
+                if updated:
+                    table_client.update_entity(mode=UpdateMode.MERGE, entity=entity)
+                    print(f"Updated missing fields for AppID: {app_id}")
+
                 apps.add(app_id.strip())
-        
+
         print(f"Loaded {len(apps)} apps from Azure Table Storage.")
-        return apps
+        return apps, table_client
     except Exception as e:
         print(f"Error loading apps from Azure Table Storage: {e}")
-        return set()
+        return set(), None
+
+def update_entity(table_client, app_id, version=None, blob_path=None, github_path=None, hash_value=None):
+    """Update specific fields of an entity in Azure Table Storage."""
+    try:
+        entity = table_client.get_entity(partition_key=PARTITION_KEY, row_key=app_id)
+
+        # Update the fields if provided
+        if version:
+            entity["version"] = version
+        if blob_path:
+            entity["Blobpath"] = blob_path
+        if github_path:
+            entity["githubpath"] = github_path
+        if hash_value:
+            entity["hash"] = hash_value
+
+        table_client.update_entity(mode=UpdateMode.MERGE, entity=entity)
+        print(f"Updated entity for AppID: {app_id}")
+    except Exception as e:
+        print(f"Error updating entity for AppID: {app_id}: {e}")
 #for testing purpose only remove for production
 
 SAVE_FILE = "recent_merged_prs.json"
@@ -128,12 +167,13 @@ def get_blob_hash(blob_client):
     
 #Azure service Bus
 
-def send_service_bus_message(app_name, app_version, blob_url):
+def send_service_bus_message(app_name, app_version, blob_url, manifest_url):
     service_bus_client = ServiceBusClient.from_connection_string(SERVICE_BUS_CONNECTION_STRING)
     message_content = {
         "ApplicationName": app_name,
         "ApplicationVersion": app_version,
         "BlobUrl": blob_url,
+        "GithubUrl": manifest_url,
     }
     message = ServiceBusMessage(json.dumps(message_content))
     
@@ -145,7 +185,7 @@ def send_service_bus_message(app_name, app_version, blob_url):
         print(f"Error sending message to Service Bus: {e}")
 
 
-def upload_to_azure(file_path, blob_name, latest_verion, app_id):
+def upload_to_azure(file_path, blob_name, latest_version, app_id, table_client, manifest_url):
     blob_service_client = BlobServiceClient.from_connection_string(STORAGE_CONNECTION_STRING)
     blob_client = blob_service_client.get_blob_client(container=CONTAINER_NAME, blob=blob_name)
 
@@ -157,6 +197,7 @@ def upload_to_azure(file_path, blob_name, latest_verion, app_id):
     if existing_blob_hash:
         print(f"Existing blob hash for {blob_name}: {existing_blob_hash}")
         if local_file_hash == existing_blob_hash:
+            update_entity(table_client, app_id, version=latest_version, blob_path=blob_name, github_path=manifest_url, hash_value=local_file_hash)
             print(f"No changes detected for {blob_name}. Skipping upload.")
             return
 
@@ -164,13 +205,13 @@ def upload_to_azure(file_path, blob_name, latest_verion, app_id):
         with open(file_path, "rb") as data:
             blob_client.upload_blob(data, overwrite=True)
         print(f"Uploaded {file_path} to Azure Blob Storage as {blob_name}")
-        send_service_bus_message(app_id, latest_verion, blob_name)
+        update_entity(table_client, app_id, version=latest_version, blob_path=blob_name, github_path=manifest_url, hash_value=local_file_hash)
+        send_service_bus_message(app_id, latest_version, blob_name, manifest_url)
     except Exception as e:
         print(f"Error uploading {file_path}: {e}")
 
 
 def load_apps_from_file(file_path):
-    """Load app names from a text file."""
     with open(file_path, "r") as file:
         return {line.strip() for line in file if line.strip()}
 
@@ -285,7 +326,8 @@ def main():
                         updated_downloaded_file = str(downloaded_file).replace("\\", "/")
                         blob_name = "/".join(updated_downloaded_file.split("/", 1)[1:])
                         print(f"Blob_name : {blob_name}")
-                        upload_to_azure(downloaded_file, blob_name, latest_version, app_id)
+                        upload_to_azure(downloaded_file, blob_name, latest_version, app_id, table_client, manifest_url)
+                        #update_entity(table_client, app_id, version=latest_version, blob_path=blob_name, github_path=manifest_url)
                         print()
             else:
                 print(f"App Name: {app_id} not found in Azure Table,  Skipping...... ")
