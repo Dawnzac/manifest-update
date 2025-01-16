@@ -8,7 +8,8 @@ from azure.servicebus import ServiceBusClient, ServiceBusMessage
 from datetime import datetime, timedelta, timezone
 import time
 import re
-
+from dotenv import load_dotenv
+load_dotenv()
 
 GITHUB_PULL_API_URL = "https://api.github.com/repos/microsoft/winget-pkgs/pulls"
 HEADERS = {"Accept": "application/vnd.github+json"}
@@ -29,13 +30,11 @@ QUEUE_NAME = "patchjob"
 SAVE_FILE = "recent_merged_prs.json"
 
 def save_to_file(data, filename):
-    """Save data to a JSON file."""
     with open(filename, "w") as f:
         json.dump(data, f, indent=4)
     print(f"Data saved to {filename}")
 
 def load_from_file(filename):
-    """Load data from a JSON file."""
     try:
         with open(filename, "r") as f:
             data = json.load(f)
@@ -72,11 +71,11 @@ def get_latest_version_url(app_id):
 def download_manifest(manifest_url, app_id, latest_version):
 
     app_path = f"{app_id[0].lower()}/{app_id.replace('.', '/')}"
-    app_download_folder = Path(DOWNLOAD_FOLDER) / app_path
+    app_download_folder = Path(DOWNLOAD_FOLDER) / app_path / latest_version
     app_download_folder.mkdir(parents=True, exist_ok=True)
     
     file_name = manifest_url.split('/')[-1]
-    file_path = app_download_folder / file_name / latest_version
+    file_path = app_download_folder / file_name
 
     print(f"Downloading {manifest_url} to {file_path}...")
     response = requests.get(manifest_url)

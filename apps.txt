@@ -1,1 +1,2 @@
 Google.Chrome
+DigitalOcean.Doctl
