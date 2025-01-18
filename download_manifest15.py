@@ -7,8 +7,8 @@ from azure.storage.blob import BlobServiceClient
 from azure.servicebus import ServiceBusClient, ServiceBusMessage
 from packaging.version import Version
 from azure.data.tables import TableServiceClient, UpdateMode
-#from dotenv import load_dotenv
-#load_dotenv()
+from dotenv import load_dotenv
+load_dotenv()
 
 GITHUB_PULL_API_URL = "https://api.github.com/repos/microsoft/winget-pkgs/pulls"
 HEADERS = {"Accept": "application/vnd.github+json"}
@@ -16,15 +16,14 @@ HEADERS = {"Accept": "application/vnd.github+json"}
 WINGET_REPO = "https://api.github.com/repos/microsoft/winget-pkgs/contents/manifests"
 WINGET_REPO_RAW_URL = "https://raw.githubusercontent.com/microsoft/winget-pkgs/master/manifests"
 DOWNLOAD_FOLDER = "manifests"
-APPS_FILE = "apps.txt"
 
 STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 CONTAINER_NAME = os.getenv("AZURE_CONTAINER_NAME")
 SERVICE_BUS_CONNECTION_STRING = os.getenv("SERVICE_BUS_CONNECTION_STRING")
-QUEUE_NAME = "winget-update"
-#QUEUE_NAME = "patchjob"
+#QUEUE_NAME = "winget-update"
+QUEUE_NAME = "patchjob"
 
-TABLE_NAME = "wingetapp"
+TABLE_NAME = "wingetapptest"
 PARTITION_KEY = "Apps"
 
 def load_apps_from_table():
@@ -136,14 +135,29 @@ def calculate_file_hash(file_path):
             hasher.update(chunk)
     return hasher.hexdigest()
 
-def get_blob_hash(blob_client):
+def get_blob_hash(table_client, app_id):
+    try:
+        entity = table_client.get_entity(partition_key="Apps", row_key=app_id)
+        
+        hash_value = entity.get("hash")
+        if hash_value:
+            print(f"Hash value for AppID {app_id}: {hash_value}")
+            return hash_value
+        else:
+            print(f"No hash value found for AppID {app_id}")
+            return None
+    except Exception as e:
+        print(f"Error fetching hash from Azure Table for AppID {app_id}: {e}")
+        return None
+
+def get_blob_hash2(blob_client):
     try:
         blob_data = blob_client.download_blob().readall()
         return hashlib.sha256(blob_data).hexdigest()
     except Exception as e:
         print(f"Error fetching blob hash: {e}")
         return None
-    
+        
 #Azure service Bus
 
 def send_service_bus_message(app_name, blob_url, manifest_url, status):
@@ -172,7 +186,8 @@ def upload_to_azure(file_path, blob_name, latest_version, app_id, table_client, 
     local_file_hash = calculate_file_hash(file_path)
     print(f"Local file hash for {file_path}: {local_file_hash}")
 
-    existing_blob_hash = get_blob_hash(blob_client)
+    #existing_blob_hash = get_blob_hash(table_client, app_id)
+    existing_blob_hash = get_blob_hash2(blob_client)
     if existing_blob_hash:
         print(f"Existing blob hash for {blob_name}: {existing_blob_hash}")
         if local_file_hash == existing_blob_hash:
@@ -182,7 +197,7 @@ def upload_to_azure(file_path, blob_name, latest_version, app_id, table_client, 
 
     try:
         with open(file_path, "rb") as data:
-            blob_client.upload_blob(data, overwrite=True)
+            blob_client.upload_blob(data, overwrite=False)
         print(f"Uploaded {file_path} to Azure Blob Storage as {blob_name}")
         update_entity(table_client, app_id, version=latest_version, blob_path=blob_name, github_path=manifest_url, hash_value=local_file_hash)
         send_service_bus_message(app_id, blob_name, manifest_url, status)

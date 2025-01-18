@@ -23,7 +23,7 @@ service_client = TableServiceClient(
 
 table_client = service_client.get_table_client(TABLE_NAME)
 
-file_path = "apps copy.txt"  # Path to your file
+file_path = "apps.txt"  # Path to your file
 try:
     with open(file_path, "r") as file:
         app_names = [line.strip() for line in file if line.strip()]
