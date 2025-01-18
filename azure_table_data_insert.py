@@ -23,18 +23,35 @@ service_client = TableServiceClient(
 
 table_client = service_client.get_table_client(TABLE_NAME)
 
-entity = {
-    "PartitionKey": "Apps",
-    "RowKey": "2",  
-    "AppID": "Google.Chrome",
-    "version": "",
-    "Blobpath": "",
-    "githubpath": "",
-    "hash": ""
-}
+file_path = "apps copy.txt"  # Path to your file
+try:
+    with open(file_path, "r") as file:
+        app_names = [line.strip() for line in file if line.strip()]
+except Exception as e:
+    raise ValueError(f"Error reading app names from file: {e}")
+
 
 try:
-    table_client.create_entity(entity=entity)
-    print("Entity inserted successfully!")
+    for app_name in app_names:
+            partition_key = "Apps" 
+            row_key = app_name     
+
+            try:
+                existing_entity = table_client.get_entity(partition_key=partition_key, row_key=row_key)
+                print(f"Entity with RowKey '{row_key}' already exists. Skipping insertion.")
+                continue
+            except Exception:
+                pass
+
+            # Construct the new entity
+            entity = {
+                "PartitionKey": partition_key,
+                "RowKey": row_key,
+                "AppID": app_name
+            }
+
+            # Insert the entity
+            table_client.create_entity(entity=entity)
+            print(f"Entity with RowKey '{row_key}' and AppID '{app_name}' inserted successfully.")
 except Exception as e:
-    print(f"Error inserting entity: {e}")
+    print(f"Error inserting entities: {e}")
