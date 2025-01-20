@@ -25,11 +25,36 @@ service_client = TableServiceClient(
 table_client = service_client.get_table_client(TABLE_NAME)
 #entities = table_client.list_entities()
 
-try:
 
-    print(f"Reading data from table '{TABLE_NAME}':")
-    entities = table_client.list_entities()
-    for entity in entities:
-        print(entity)
-except Exception as e:
-    print(f"Error reading table: {e}")
+def get_blob_hash(table_client, app_id):
+    try:
+        entity = table_client.get_entity(partition_key="Apps", row_key=app_id)
+        
+        hash_value = entity.get("hash")
+        if hash_value:
+            print(f"Hash value for AppID {app_id}: {hash_value}")
+            return hash_value
+        else:
+            print(f"No hash value found for AppID {app_id}")
+            return None
+    except Exception as e:
+        print(f"Error fetching hash from Azure Table for AppID {app_id}: {e}")
+        return None
+    
+
+def fetch_data():
+    try:
+        print(f"Reading data from table '{TABLE_NAME}':")
+        entities = table_client.list_entities()
+        for entity in entities:
+            print(entity)
+    except Exception as e:
+        print(f"Error reading table: {e}")
+
+def main():
+    #fetch_data()
+    hash = get_blob_hash(table_client,app_id="DigitalOcean.Doctl")
+    print(hash)
+
+if __name__ == "__main__":
+    main()

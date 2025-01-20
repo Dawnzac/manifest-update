@@ -26,8 +26,30 @@ QUEUE_NAME = "patchjob"
 TABLE_NAME = "wingetapptest"
 PARTITION_KEY = "Apps"
 
+
+#for testing purpose only remove for production
+
+SAVE_FILE = "api_response.json"
+
+def save_to_file(data, filename):
+    with open(filename, "w") as f:
+        json.dump(data, f, indent=4)
+    print(f"Data saved to {filename}")
+
+def load_from_file(filename):
+    try:
+        with open(filename, "r") as f:
+            data = json.load(f)
+        print(f"Data loaded from {filename}")
+        return data
+    except FileNotFoundError:
+        print(f"{filename} not found. Returning an empty list.")
+        return []
+
+#Testing code ends
+
+
 def load_apps_from_table():
-    """Load app entities from Azure Table Storage and ensure completeness."""
     try:
         table_service_client = TableServiceClient.from_connection_string(STORAGE_CONNECTION_STRING)
         table_client = table_service_client.get_table_client(TABLE_NAME)
@@ -67,7 +89,6 @@ def load_apps_from_table():
         return set(), None
 
 def update_entity(table_client, app_id, version=None, blob_path=None, github_path=None, hash_value=None, git_sha=None):
-    """Update specific fields of an entity in Azure Table Storage."""
     try:
         entity = table_client.get_entity(partition_key=PARTITION_KEY, row_key=app_id)
 
@@ -148,21 +169,12 @@ def get_blob_hash(table_client, app_id):
         
         hash_value = entity.get("gitsha")
         if hash_value:
-            print(f"Git Commit Hash value for AppID {app_id}: {hash_value}")
             return hash_value
         else:
             print(f"No Git Commit hash value found for AppID {app_id}")
             return None
     except Exception as e:
         print(f"Error fetching hash from Azure Table for AppID {app_id}: {e}")
-        return None
-
-def get_blob_hash2(blob_client):
-    try:
-        blob_data = blob_client.download_blob().readall()
-        return hashlib.sha256(blob_data).hexdigest()
-    except Exception as e:
-        print(f"Error fetching blob hash: {e}")
         return None
         
 #Azure service Bus
@@ -194,21 +206,21 @@ def upload_to_azure(file_path, blob_name, latest_version, app_id, table_client, 
     # local_file_hash = calculate_file_hash(file_path)
     # print(f"Local file hash for {file_path}: {local_file_hash}")
 
-    local_file_hash = latest_sha
-    print(f"Latest git commit hash for {app_id}: {local_file_hash}")
+    # local_file_hash = latest_sha
+    # print(f"Latest git commit hash for {app_id}: {local_file_hash}")
 
-    existing_blob_hash = get_blob_hash(table_client, app_id)
-    #existing_blob_hash = get_blob_hash2(blob_client)
-    if existing_blob_hash:
-        print(f"Existing blob hash for {blob_name}: {existing_blob_hash}")
-        if local_file_hash == existing_blob_hash:
-            update_entity(table_client, app_id, version=latest_version, blob_path=blob_name, github_path=manifest_url, hash_value=None, git_sha=latest_sha)
-            print(f"No changes detected for {blob_name}. Skipping upload.")
-            return
+    # existing_blob_hash = get_blob_hash(table_client, app_id)
+    # #existing_blob_hash = get_blob_hash2(blob_client)
+    # if existing_blob_hash:
+    #     print(f"Existing blob hash for {blob_name}: {existing_blob_hash}")
+    #     if local_file_hash == existing_blob_hash:
+    #         #update_entity(table_client, app_id, version=latest_version, blob_path=blob_name, github_path=manifest_url, hash_value=None, git_sha=latest_sha)
+    #         print(f"No changes detected for {blob_name}. Skipping upload.")
+    #         return
 
     try:
-        # with open(file_path, "rb") as data:
-        #     blob_client.upload_blob(data, overwrite=False)
+        with open(file_path, "rb") as data:
+            blob_client.upload_blob(data, overwrite=False)
         print(f"Uploaded {file_path} to Azure Blob Storage as {blob_name}")
         update_entity(table_client, app_id, version=latest_version, blob_path=blob_name, github_path=manifest_url, hash_value=None, git_sha=latest_sha)
         status="New Version"
@@ -224,6 +236,13 @@ def main():
 
     apps, table_client = load_apps_from_table()
 
+    #for testing purpuse only
+    #api_response_save = load_from_file(SAVE_FILE)
+
+
+
+#testing code ends
+
     if not apps:
         print("Error: No apps found in Azure Table Storage!")
         return
@@ -234,6 +253,21 @@ def main():
     for app_id in apps:
         manifest_url, latest_version, latest_sha = get_latest_version_url(app_id)
         if manifest_url:
+
+            local_file_hash = latest_sha
+            print(f"Latest git commit hash for {app_id}: {local_file_hash}")
+
+            existing_blob_hash = get_blob_hash(table_client, app_id)
+            #existing_blob_hash = get_blob_hash2(blob_client)
+            if existing_blob_hash:
+                print(f"Existing blob hash for {app_id}: {existing_blob_hash}")
+                if local_file_hash == existing_blob_hash:
+                    #update_entity(table_client, app_id, version=latest_version, blob_path=blob_name, github_path=manifest_url, hash_value=None, git_sha=latest_sha)
+                    print(f"No changes detected for {app_id}. Skipping upload.")
+                    print()
+                    continue
+
+            print("New Commit detected !! \n")
             downloaded_file = download_manifest(manifest_url, app_id, latest_version) 
             if downloaded_file:
                 updated_downloaded_file = str(downloaded_file).replace("\\", "/")
