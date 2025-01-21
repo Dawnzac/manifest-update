@@ -71,7 +71,7 @@ def load_apps_from_table():
                     updated = True
                 if not entity.get("hash"):
                     entity["hash"] = ""
-                    updated = True
+                    updated = False
                 if not entity.get("gitsha"):
                     entity["gitsha"] = ""
                     updated = True
@@ -82,10 +82,10 @@ def load_apps_from_table():
 
                 apps.add(app_id.strip())
 
-        print(f"Loaded {len(apps)} apps from Azure Table Storage.")
+        print(f"\033[33mLoaded {len(apps)} apps from Azure Table Storage.\n \n \033[0m")
         return apps, table_client
     except Exception as e:
-        print(f"Error loading apps from Azure Table Storage: {e}")
+        print(f"\033[31mError loading apps from Azure Table Storage: {e}\033[0m")
         return set(), None
 
 def update_entity(table_client, app_id, version=None, blob_path=None, github_path=None, hash_value=None, git_sha=None):
@@ -128,10 +128,10 @@ def get_latest_version_url(app_id):
         latest_version = latest_version_info["name"]
         latest_sha = latest_version_info["sha"]
         latest_url = f"{manifest_url}/{latest_version}/{app_id}.installer.yaml"
-        print(f"Latest manifest URL for {app_id}: {latest_url}")
+        print(f"\033[33mLatest manifest URL for {app_id}: {latest_url}\033[0m")
         return latest_url, latest_version, latest_sha
     else:
-        print(f"Failed to fetch data from GitHub API. Status code: {response.status_code}")
+        print(f"\033[31mFailed to fetch data from GitHub API. Status code: {response.status_code}\033[0m")
         return None
 
 def download_manifest(manifest_url, app_id, latest_version):
@@ -148,10 +148,10 @@ def download_manifest(manifest_url, app_id, latest_version):
     if response.status_code == 200:
         with open(file_path, 'w', encoding='utf-8') as file:
             file.write(response.text)
-        print(f"Downloaded {file_name} to {app_download_folder}")
+        print(f"\033[32mDownloaded {file_name} to {app_download_folder}\033[0m")
         return file_path
     else:
-        print(f"Failed to download {manifest_url}. HTTP status code: {response.status_code}")
+        print(f"\033[31mFailed to download {manifest_url}. HTTP status code: {response.status_code}\033[0m")
         return None
 
 #Azure Stuff - checking if file already exist with file Hash
@@ -171,10 +171,10 @@ def get_blob_hash(table_client, app_id):
         if hash_value:
             return hash_value
         else:
-            print(f"No Git Commit hash value found for AppID {app_id}")
+            print(f"\033[35mNo Git Commit hash value found for AppID {app_id}\033[0m")
             return None
     except Exception as e:
-        print(f"Error fetching hash from Azure Table for AppID {app_id}: {e}")
+        print(f"\033[31mError fetching hash from Azure Table for AppID {app_id}: {e}\033[0m")
         return None
         
 #Azure service Bus
@@ -193,40 +193,24 @@ def send_service_bus_message(app_name,latest_version ,blob_url, manifest_url, st
     try:
         with service_bus_client.get_queue_sender(queue_name=QUEUE_NAME) as sender:
             sender.send_messages(message)
-        print(f"Message sent to Service Bus: {message_content} with status: {status}")
+        print(f"\033[34mMessage sent to Service Bus: {message_content} with status: {status}\033[0m")
     except Exception as e:
-        print(f"Error sending message to Service Bus: {e}")
+        print(f"\033[31mError sending message to Service Bus: {e}\033[0m")
 
 
 def upload_to_azure(file_path, blob_name, latest_version, app_id, table_client, manifest_url, latest_sha):
     blob_service_client = BlobServiceClient.from_connection_string(STORAGE_CONNECTION_STRING)
     blob_client = blob_service_client.get_blob_client(container=CONTAINER_NAME, blob=blob_name)
 
-    # Calculate file hash
-    # local_file_hash = calculate_file_hash(file_path)
-    # print(f"Local file hash for {file_path}: {local_file_hash}")
-
-    # local_file_hash = latest_sha
-    # print(f"Latest git commit hash for {app_id}: {local_file_hash}")
-
-    # existing_blob_hash = get_blob_hash(table_client, app_id)
-    # #existing_blob_hash = get_blob_hash2(blob_client)
-    # if existing_blob_hash:
-    #     print(f"Existing blob hash for {blob_name}: {existing_blob_hash}")
-    #     if local_file_hash == existing_blob_hash:
-    #         #update_entity(table_client, app_id, version=latest_version, blob_path=blob_name, github_path=manifest_url, hash_value=None, git_sha=latest_sha)
-    #         print(f"No changes detected for {blob_name}. Skipping upload.")
-    #         return
-
     try:
         with open(file_path, "rb") as data:
-            blob_client.upload_blob(data, overwrite=False)
-        print(f"Uploaded {file_path} to Azure Blob Storage as {blob_name}")
+            blob_client.upload_blob(data, overwrite=True)
+        print(f"\033[36mUploaded {file_path} to Azure Blob Storage as {blob_name}\033[0m")
         update_entity(table_client, app_id, version=latest_version, blob_path=blob_name, github_path=manifest_url, hash_value=None, git_sha=latest_sha)
         status="New Version"
         send_service_bus_message(app_id, latest_version, blob_name, manifest_url, status)
     except Exception as e:
-        print(f"Error uploading {file_path}: {e}")
+        print(f"\033[31mError uploading {file_path}: {e}\033[0m")
 
 
 
@@ -244,7 +228,7 @@ def main():
 #testing code ends
 
     if not apps:
-        print("Error: No apps found in Azure Table Storage!")
+        print("\033[31mError: No apps found in Azure Table Storage!\033[0m")
         return
 
     Path(DOWNLOAD_FOLDER).mkdir(exist_ok=True)
@@ -263,18 +247,18 @@ def main():
                 print(f"Existing blob hash for {app_id}: {existing_blob_hash}")
                 if local_file_hash == existing_blob_hash:
                     #update_entity(table_client, app_id, version=latest_version, blob_path=blob_name, github_path=manifest_url, hash_value=None, git_sha=latest_sha)
-                    print(f"No changes detected for {app_id}. Skipping upload.")
-                    print()
+                    print(f"\033[33mNo changes detected for {app_id}. Skipping upload.\033[0m")
+                    print("\n\n")
                     continue
 
-            print("New Commit detected !! \n")
+            print("\033[32mNew Commit detected !! \033[0m\n")
             downloaded_file = download_manifest(manifest_url, app_id, latest_version) 
             if downloaded_file:
                 updated_downloaded_file = str(downloaded_file).replace("\\", "/")
                 blob_name = "/".join(updated_downloaded_file.split("/", 1)[1:])
                 print(f"Blob_name : {blob_name}")
                 upload_to_azure(downloaded_file, blob_name, latest_version, app_id, table_client, manifest_url, latest_sha) #and hope it's a new version :/ (for now)
-                print()
+                print("\n\n")
 
 
 if __name__ == "__main__":
