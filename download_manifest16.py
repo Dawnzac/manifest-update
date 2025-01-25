@@ -207,7 +207,7 @@ def upload_to_azure(file_path, blob_name, latest_version, app_id, table_client, 
             blob_client.upload_blob(data, overwrite=True)
         print(f"\033[36mUploaded {file_path} to Azure Blob Storage as {blob_name}\033[0m")
         update_entity(table_client, app_id, version=latest_version, blob_path=blob_name, github_path=manifest_url, hash_value=None, git_sha=latest_sha)
-        status="New Version"
+        status="Update"
         send_service_bus_message(app_id, latest_version, blob_name, manifest_url, status)
     except Exception as e:
         print(f"\033[31mError uploading {file_path}: {e}\033[0m")
