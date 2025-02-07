@@ -130,7 +130,7 @@ def send_service_bus_message(app_name: str, status: str):
 def process_app(app_name: str):
     cask_content = download_cask_file(app_name)
     if cask_content is None:
-        send_service_bus_message(app_name, "Download failed")
+        #send_service_bus_message(app_name, "Download failed")
         return
 
     if upload_to_blob(app_name, cask_content):
