@@ -39,28 +39,56 @@ def load_apps_from_cosmos():
         database = client.get_database_client(COSMOS_DATABASE)
         container = database.get_container_client(COSMOS_CONTAINER)
         
-        query = "SELECT c.appId FROM c"
+        query = "SELECT * FROM c"
         apps = set()
         for item in container.query_items(query=query, enable_cross_partition_query=True):
             app_id = item.get("appId")
+            doc_id = item.get("id")
+            
+            if not doc_id:
+                print(f"⚠️ Skipping document with missing 'id' for AppID: {app_id}")
+                continue  
+            
+            updated = False
+            
+            for field in ["version", "Blobpath", "githubpath", "gitsha"]:
+                if field not in item:
+                    item[field] = ""  
+                    updated = True
+
+            if updated:
+                try:
+                    container.replace_item(item=doc_id, body=item)
+                    print(f"✅ Updated missing fields for AppID: {app_id}")
+                except exceptions.CosmosHttpResponseError as e:
+                    print(f"❌ Error replacing document {doc_id}: {e}")
+
+
             if app_id:
+                #print(f"Debug : ", app_id)
                 apps.add(app_id.strip())
         
         print(f"Loaded {len(apps)} apps from Cosmos DB.")
         return apps, client
     except exceptions.CosmosResourceNotFoundError as e:
         print(f"Error querying Cosmos DB: Resource not found. Please check your database and container names.\n{e}")
-        return set()
+        return set(), None
     except Exception as e:
         print(f"Error querying Cosmos DB: {e}")
-        return set()
+        return set(), None
 
 def update_entity(cosmos_client, app_id, version=None, blob_path=None, github_path=None, git_sha=None, database_name=COSMOS_DATABASE, container_name=COSMOS_CONTAINER):
     try:
         container = cosmos_client.get_database_client(database_name).get_container_client(container_name)
+
+        query = "SELECT * FROM c WHERE c.appId = @app_id"
+        parameters = [{"name": "@app_id", "value": app_id}]
         
-        query = f"SELECT * FROM c WHERE c.appId = '{app_id}'"
-        results = list(container.query_items(query=query, enable_cross_partition_query=True))
+        #print(f"🔍 Querying for AppID: {app_id}")
+        results = list(container.query_items(query=query, parameters=parameters, enable_cross_partition_query=True))
+        
+        #Debugging:
+        #print(f"Query results: {results}")
         
         if not results:
             print(f"\033[31mError: No entity found for AppID: {app_id}\033[0m")

@@ -2,7 +2,6 @@ from azure.cosmos import CosmosClient, exceptions
 import os
 from dotenv import load_dotenv
 
-# Load environment variables
 load_dotenv()
 
 COSMOS_ENDPOINT = os.getenv("COSMOS_ENDPOINT")
@@ -10,7 +9,6 @@ COSMOS_KEY = os.getenv("COSMOS_KEY")
 COSMOS_DATABASE = os.getenv("COSMOS_DATABASE")
 COSMOS_CONTAINER = os.getenv("COSMOS_CONTAINER")
 
-# Initialize Cosmos Client
 client = CosmosClient(COSMOS_ENDPOINT, COSMOS_KEY)
 container = client.get_database_client(COSMOS_DATABASE).get_container_client(COSMOS_CONTAINER)
 
@@ -24,16 +22,17 @@ def get_next_id():
 
 try:
 
-    next_id = 3
+    next_id = 1
     print(f"Next ID: {next_id}")
 
 
     with open('apps.txt', 'r') as file:
         for line in file:
+            appId = line.strip()
             item = {
                 "id": str(next_id),
-                "packageIdentifier": line,
-                "appId": line
+                "packageIdentifier": appId,
+                "appId": appId
             }
 
             container.create_item(body=item)
