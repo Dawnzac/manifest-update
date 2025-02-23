@@ -2,7 +2,6 @@ import requests
 import json
 from pathlib import Path
 import os
-import hashlib
 from azure.storage.blob import BlobServiceClient
 from azure.servicebus import ServiceBusClient, ServiceBusMessage
 from packaging.version import Version
@@ -149,8 +148,8 @@ def download_manifest(manifest_url, app_id, latest_version):
     print(f"Downloading {manifest_url} to {file_path}...")
     response = requests.get(manifest_url)
     if response.status_code == 200:
-        # with open(file_path, 'w', encoding='utf-8') as file:
-        #     file.write(response.text)
+        with open(file_path, 'w', encoding='utf-8') as file:
+            file.write(response.text)
         print(f"\033[32mDownloaded {file_name} to {app_download_folder}\033[0m")
         return file_path
     else:
@@ -208,7 +207,7 @@ def upload_to_azure(file_path, blob_name, latest_version, app_id, CosmosClient, 
     blob_client = blob_service_client.get_blob_client(container=CONTAINER_NAME, blob=blob_name)
 
     try:
-        #    blob_client.upload_blob(data, overwrite=True)
+        blob_client.upload_blob(data, overwrite=True)
         print(f"\033[36mUploaded {file_path} to Azure Blob Storage as {blob_name}\033[0m")
         update_entity(CosmosClient, app_id, version=latest_version, blob_path=blob_name, github_path=manifest_url, git_sha=latest_sha)
         status="Update"
