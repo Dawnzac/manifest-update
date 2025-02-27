@@ -141,6 +141,22 @@ def load_apps_from_file(file_path):
 #         print(f"\033[31mFailed to fetch data from GitHub API. Status code: {response.status_code}\033[0m")
 #         return None
 
+def get_sha256(response_json):
+
+    try:
+        sha256 = response_json.get("ruby_source_checksum", {}).get("sha256")
+
+        if sha256:
+            print(f"\033[32mSHA256 Checksum: {sha256}\033[0m")
+            return sha256
+        else:
+            print("\033[31mSHA256 checksum not found in the manifest.\033[0m")
+            return None
+
+    except (KeyError, TypeError) as e:
+        print(f"\033[31mError reading SHA256 checksum: {e}\033[0m")
+        return None
+
 def download_manifest(app_id):
     api_url = f"{API_URL}/cask/{app_id}.json"
     app_download_folder_formula = Path(DOWNLOAD_FOLDER) / "formula"
@@ -155,6 +171,8 @@ def download_manifest(app_id):
         print(f"Downloading {app_id}...")  
         response = requests.get(f"{API_URL}/cask/{app_id}.json", timeout=10) 
         response.raise_for_status() 
+
+        get_sha256(response.json())
 
         file_path = app_download_folder_cask / file_name
         formatted_json = json.dumps(response.json(), indent=4, ensure_ascii=False)

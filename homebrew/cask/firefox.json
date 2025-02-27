@@ -209,10 +209,10 @@
     "analytics": {
         "install": {
             "30d": {
-                "firefox": 13672
+                "firefox": 13671
             },
             "90d": {
-                "firefox": 41646
+                "firefox": 41645
             },
             "365d": {
                 "firefox": 161935
