@@ -50,7 +50,7 @@ def load_apps_from_cosmos():
             
             updated = False
             
-            for field in ["version", "Blobpath", "githubpath", "gitsha"]:
+            for field in ["packageVersion", "manifestBlobpath", "githubFolderPath", "gitsha"]:
                 if field not in item:
                     item[field] = ""  
                     updated = True
@@ -96,11 +96,11 @@ def update_entity(cosmos_client, app_id, version=None, blob_path=None, github_pa
         entity = results[0]
         
         if version:
-            entity["version"] = version
+            entity["packageVersion"] = version
         if blob_path:
-            entity["Blobpath"] = blob_path
+            entity["manifestBlobpath"] = blob_path
         if github_path:
-            entity["githubpath"] = github_path
+            entity["githubFolderPath"] = github_path
         if git_sha:
             entity["gitsha"] = git_sha
 
@@ -207,7 +207,8 @@ def upload_to_azure(file_path, blob_name, latest_version, app_id, CosmosClient, 
     blob_client = blob_service_client.get_blob_client(container=CONTAINER_NAME, blob=blob_name)
 
     try:
-        blob_client.upload_blob(data, overwrite=True)
+        with open(file_path, "rb") as data:
+            blob_client.upload_blob(data, overwrite=True)
         print(f"\033[36mUploaded {file_path} to Azure Blob Storage as {blob_name}\033[0m")
         update_entity(CosmosClient, app_id, version=latest_version, blob_path=blob_name, github_path=manifest_url, git_sha=latest_sha)
         status="Update"
