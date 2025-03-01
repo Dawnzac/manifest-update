@@ -22,7 +22,7 @@ def get_next_id():
 
 try:
 
-    next_id = 1
+    next_id = get_next_id()
     print(f"Next ID: {next_id}")
 
 
