@@ -28,14 +28,19 @@ jobs:
           python-version: "3.10"
 
       - name: Install Dependencies
-        run: pip install requests beautifulsoup4
+        run: pip install requests beautifulsoup4 packaging
 
       - name: Install Azure Storage SDK
-        run: pip install azure-storage-blob azure-servicebus
+        run: pip install azure-storage-blob azure-servicebus azure.cosmos packaging azure-data-tables
 
       - name: Run Script to Fetch Winget Manifests
         env:
           AZURE_STORAGE_CONNECTION_STRING: ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
           SERVICE_BUS_CONNECTION_STRING: ${{ secrets.SERVICE_BUS_CONNECTION_STRING }}
           AZURE_CONTAINER_NAME: manifests
-        run: python download_manifest11.py
+          COSMOS_ENDPOINT: ${{ secrets.COSMOS_ENDPOINT }}
+          COSMOS_KEY: ${{ secrets.COSMOS_KEY }}
+          COSMOS_DATABASE: ${{ secrets.COSMOS_DATABASE }}
+          COSMOS_CONTAINER: ${{ secrets.COSMOS_CONTAINER }}
+
+        run: python download_manifest.py
